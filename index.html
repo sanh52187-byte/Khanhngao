@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Acc Game Cao Cấp | Auto Topup</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SweetAlert2 (Thay thế alert, prompt xấu xí) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        /* ================= CSS VARIABLES (CHUẨN CHUYÊN NGHIỆP) ================= */
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151c2c;
+            --bg-hover: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+            --radius: 12px;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ================= GLOBAL ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* ================= HEADER ================= */
+        header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--bg-card); padding: 15px 25px; 
+            border-radius: var(--radius); margin-bottom: 30px; 
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+            position: sticky; top: 10px; z-index: 100;
+        }
+        .logo-text { font-size: 24px; font-weight: 700; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .user-balance { font-size: 16px; background: rgba(16, 185, 129, 0.1); padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .user-balance span { color: var(--success); font-weight: 700; font-size: 20px; }
+        
+        .btn-admin { 
+            background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger);
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;
+        }
+        .btn-admin:hover { background: var(--danger); color: white; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+
+        /* ================= LAYOUT GRID ================= */
+        .main-layout { display: grid; grid-template-columns: 350px 1fr; gap: 25px; align-items: start; }
+        @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+
+        /* ================= CARDS & FORMS ================= */
+        .panel { 
+            background: var(--bg-card); padding: 25px; border-radius: var(--radius); 
+            border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 25px;
+        }
+        .panel-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+        .form-control { 
+            width: 100%; padding: 12px 15px; border-radius: 8px; 
+            background: var(--bg-main); border: 1px solid var(--border); 
+            color: var(--text-main); font-size: 14px; transition: 0.3s;
+        }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+
+        .btn { 
+            width: 100%; padding: 14px; border: none; border-radius: 8px; 
+            font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s; 
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: var(--success-hover); transform: translateY(-2px); }
+
+        /* ================= SHOP ITEMS (GRID) ================= */
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+        .acc-card { 
+            background: var(--bg-main); border: 1px solid var(--border); 
+            border-radius: var(--radius); padding: 20px; position: relative; 
+            overflow: hidden; transition: all 0.3s; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .acc-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .acc-id { font-size: 12px; color: var(--text-muted); background: var(--bg-hover); padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 10px; }
+        .acc-title { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 15px; line-height: 1.4; }
+        .acc-price { font-size: 22px; font-weight: 700; color: var(--success); margin-bottom: 20px; }
+        
+        .acc-card.sold { opacity: 0.6; filter: grayscale(1); pointer-events: none; }
+        .acc-card.sold::after { 
+            content: 'ĐÃ BÁN'; position: absolute; top: 20px; right: -30px; 
+            background: var(--danger); color: white; font-weight: bold; font-size: 12px;
+            padding: 5px 30px; transform: rotate(45deg); box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* ================= ADMIN AREA ================= */
+        #admin-area { display: none; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: rgba(255,255,255,0.02); color: var(--text-muted); font-weight: 600; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-info { background: rgba(59,130,246,0.1); color: var(--primary); border: 1px solid var(--primary); }
+
+        /* Helpers */
+        .text-warning { color: var(--warning); }
+        .text-danger { color: var(--danger); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <header>
+        <div class="logo-text"><i class="fa-solid fa-gamepad"></i> PRO SHOP</div>
+        <div class="user-balance">
+            <i class="fa-solid fa-wallet"></i> Số dư: <span id="ui-balance">0</span> đ
+        </div>
+        <div>
+            <button class="btn-admin" id="btn-admin-toggle" onclick="App.toggleAdmin()">
+                <i class="fa-solid fa-user-shield"></i> <span id="admin-btn-text">Admin Panel</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ADMIN AREA -->
+    <div id="admin-area">
+        <div class="main-layout" style="margin-bottom: 25px;">
+            <div class="panel" style="border-color: var(--warning);">
+                <div class="panel-title text-warning"><i class="fa-solid fa-cloud-arrow-up"></i> Đăng Bán Tài Khoản</div>
+                <div class="form-group">
+                    <label>Tiêu đề tài khoản</label>
+                    <input type="text" id="acc-title" class="form-control" placeholder="VD: VIP 10, Full Tướng...">
+                </div>
+                <div class="form-group">
+                    <label>Giá bán (VNĐ)</label>
+                    <input type="number" id="acc-price" class="form-control" placeholder="50000">
+                </div>
+                <div class="form-group">
+                    <label>Tài khoản | Mật khẩu (Ẩn với khách)</label>
+                    <input type="text" id="acc-creds" class="form-control" placeholder="user123 | pass123">
+                </div>
+                <button class="btn btn-primary" style="background: var(--warning); color: #000;" onclick="App.uploadAccount()">
+                    <i class="fa-solid fa-upload"></i> ĐĂNG LÊN CHỢ
+                </button>
+            </div>
+
+            <div class="panel" style="border-color: var(--danger); overflow-x: auto;">
+                <div class="panel-title text-danger"><i class="fa-solid fa-history"></i> Lịch Sử Thẻ Nạp (Chỉ Admin)</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Mạng</th>
+                            <th>Mệnh giá</th>
+                            <th>Mã PIN</th>
+                            <th>Số Serial</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-cards-list">
+                        <!-- Render here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN AREA (KHÁCH HÀNG) -->
+    <div class="main-layout">
+        <!-- Sidebar Nạp thẻ -->
+        <aside>
+            <div class="panel">
+                <div class="panel-title"><i class="fa-solid fa-bolt"></i> Nạp Thẻ Tự Động</div>
+                <div class="form-group">
+                    <label>Nhà cung cấp</label>
+                    <select id="card-type" class="form-control">
+                        <option value="VIETTEL">Viettel</option>
+                        <option value="MOBIFONE">Mobifone</option>
+                        <option value="VINAPHONE">Vinaphone</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mệnh giá</label>
+                    <select id="card-value" class="form-control">
+                        <option value="10000">10,000 VNĐ</option>
+                        <option value="20000">20,000 VNĐ</option>
+                        <option value="50000">50,000 VNĐ</option>
+                        <option value="100000">100,000 VNĐ</option>
+                        <option value="500000">500,000 VNĐ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mã thẻ (PIN)</label>
+                    <input type="text" id="card-pin" class="form-control" placeholder="Nhập mã số sau lớp cào">
+                </div>
+                <div class="form-group">
+                    <label>Số Serial</label>
+                    <input type="text" id="card-serial" class="form-control" placeholder="Nhập số Serial trên thẻ">
+                </div>
+                <button class="btn btn-primary" id="btn-topup" onclick="App.processTopup()">
+                    <i class="fa-solid fa-money-bill-wave"></i> NẠP TIỀN NGAY
+                </button>
+            </div>
+            
+            <div class="panel" style="background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2);">
+                <div class="panel-title" style="font-size: 15px; color: var(--primary);"><i class="fa-solid fa-circle-info"></i> Lưu ý hệ thống</div>
+                <p style="font-size: 13px; color: var(--text-muted);">
+                    - Hệ thống xử lý thẻ nạp tự động 100%.<br>
+                    - Nhập sai mã thẻ / Serial hệ thống sẽ báo lỗi và không cộng tiền.<br>
+                    - Vui lòng chọn đúng mệnh giá thẻ để tránh mất thẻ.
+                </p>
+            </div>
+        </aside>
+
+        <!-- Main Content Cửa Hàng -->
+        <main>
+            <div class="panel">
+                <div class="panel-title"><i class="fa-solid fa-store"></i> Chợ Tài Khoản (Cập nhật Realtime)</div>
+                <div class="shop-grid" id="shop-container">
+                    <!-- Accounts render here -->
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // MODULE CHÍNH (Đóng gói Code sạch sẽ, chuyên nghiệp)
+    // ==========================================
+    const App = (() => {
+        // --- CẤU HÌNH FIREBASE ---
+        const firebaseConfig = {
+            databaseURL: "https://shop-game-demo-default-rtdb.firebaseio.com" // Thay DB thực tế vào đây
+        };
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch(e) {
+            console.warn("Chạy chế độ Offline Simulator");
+        }
+
+        // --- TRẠNG THÁI (STATE) ---
+        let state = {
+            isAdmin: false,
+            balance: 0,
+            accounts: [
+                { id: 'Acc-1001', title: 'Acc Liên Quân Rank Cao Thủ, Trắng TT', price: 50000, creds: 'user_lq01 | pass_lq01', status: 'available' },
+                { id: 'Acc-1002', title: 'Acc Free Fire Quỷ Dạ Xoa, Sẵn Kim Cương', price: 100000, creds: 'user_ff02 | pass_ff02', status: 'available' }
+            ],
+            cards: []
+        };
+
+        const ADMIN_PIN = "2016";
+
+        // --- TIỆN ÍCH UI (SweetAlert2) ---
+        const Toast = Swal.mixin({
+            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true
+        });
+
+        const formatMoney = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + 'đ';
+
+        // --- RENDER HÀM ---
+        const renderUI = () => {
+            document.getElementById('ui-balance').innerText = formatMoney(state.balance).replace('đ','');
+            
+            // Render Cửa hàng
+            const shopContainer = document.getElementById('shop-container');
+            if (Object.keys(state.accounts).length === 0) {
+                shopContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">Chưa có tài khoản nào được đăng bán.</p>';
+            } else {
+                shopContainer.innerHTML = Object.values(state.accounts).map(acc => `
+                    <div class="acc-card ${acc.status === 'sold' ? 'sold' : ''}">
+                        <div>
+                            <span class="acc-id">Mã: #${acc.id.slice(-4)}</span>
+                            <h4 class="acc-title">${acc.title}</h4>
+                        </div>
+                        <div>
+                            <div class="acc-price">${formatMoney(acc.price)}</div>
+                            <button class="btn btn-success" onclick="App.buyAccount('${acc.id}', ${acc.price})">
+                                <i class="fa-solid fa-cart-shopping"></i> MUA NGAY
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Render Bảng Admin
+            if (state.isAdmin) {
+                const tbody = document.getElementById('admin-cards-list');
+                const cardList = Object.values(state.cards);
+                if (cardList.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Chưa có thẻ nạp nào.</td></tr>';
+                } else {
+                    tbody.innerHTML = cardList.map(c => `
+                        <tr>
+                            <td style="font-size: 12px; color: var(--text-muted);">${c.time}</td>
+                            <td><span class="badge badge-info">${c.type}</span></td>
+                            <td style="color: var(--success); font-weight: bold;">${formatMoney(c.value)}</td>
+                            <td style="color: var(--warning); font-family: monospace; font-size: 15px;">${c.pin}</td>
+                            <td style="color: #fff; font-family: monospace; font-size: 15px;">${c.serial}</td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        };
+
+        // --- KHỞI TẠO REALTIME SYNC ---
+        const initSync = () => {
+            if (!db) { renderUI(); return; }
+            
+            db.ref('accounts').on('value', snap => {
+                state.accounts = snap.val() || {};
+                renderUI();
+            });
+
+            db.ref('cards').on('value', snap => {
+                state.cards = snap.val() || {};
+                if (state.isAdmin) renderUI();
+            });
+        };
+
+        return {
+            init: () => {
+                initSync();
+            },
+
+            // XỬ LÝ ADMIN LOGIN (Bảo mật bằng SweetAlert2 thay vì prompt)
+            toggleAdmin: () => {
+                if (state.isAdmin) {
+                    state.isAdmin = false;
+                    document.getElementById('admin-area').style.display = 'none';
+                    document.getElementById('admin-btn-text').innerText = 'Admin Panel';
+                    document.getElementById('btn-admin-toggle').style.background = 'rgba(239, 68, 68, 0.1)';
+                    Toast.fire({ icon: 'info', title: 'Đã thoát chế độ Admin' });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Xác thực Quản Trị Viên',
+                    input: 'password',
+                    inputPlaceholder: 'Nhập mã PIN...',
+                    background: 'var(--bg-card)', color: '#fff',
+                    showCancelButton: true, confirmButtonText: 'Đăng nhập',
+                    confirmButtonColor: 'var(--primary)',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (result.value === ADMIN_PIN) {
+                            state.isAdmin = true;
+                            document.getElementById('admin-area').style.display = 'block';
+                            document.getElementById('admin-btn-text').innerText = 'Thoát Admin';
+                            document.getElementById('btn-admin-toggle').style.background = 'var(--danger)';
+                            renderUI();
+                            Toast.fire({ icon: 'success', title: 'Đăng nhập Admin thành công!' });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Mã PIN không chính xác!', background: 'var(--bg-card)', color: '#fff' });
+                        }
+                    }
+                });
+            },
+
+            // XỬ LÝ NẠP THẺ (Kèm hiệu ứng Loading)
+            processTopup: () => {
+                const type = document.getElementById('card-type').value;
+                const value = parseInt(document.getElementById('card-value').value);
+                const pin = document.getElementById('card-pin').value.trim();
+                const serial = document.getElementById('card-serial').value.trim();
+
+                // Validation chuẩn: Chuỗi số, dài 10 - 15 ký tự
+                const isNumeric = /^\d{10,15}$/;
+
+                if (!pin || !serial) {
+                    return Swal.fire({ icon: 'warning', title: 'Thiếu thông tin', text: 'Vui lòng điền đủ Mã PIN và Số Serial!', background: 'var(--bg-card)', color: '#fff' });
+                }
+
+                // Giả lập Loading kết nối API nha mạng (Làm cho web trông xịn hơn)
+                const btn = document.getElementById('btn-topup');
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-money-bill-wave"></i> NẠP TIỀN NGAY';
+                    btn.disabled = false;
+
+                    if (!isNumeric.test(pin) || !isNumeric.test(serial)) {
+                        return Swal.fire({ icon: 'error', title: 'Thẻ không hợp lệ!', text: 'Mã thẻ/Serial sai định dạng. Vui lòng kiểm tra lại.', background: 'var(--bg-card)', color: '#fff' });
+                    }
+
+                    // Thành công
+                    const cardData = {
+                        id: 'Card-' + Date.now(),
+                        type, value, pin, serial,
+                        time: new Date().toLocaleString('vi-VN')
+                    };
+
+                    if (db) db.ref('cards').push(cardData);
+                    else state.cards.push(cardData);
+
+                    state.balance += value;
+                    renderUI();
+
+                    document.getElementById('card-pin').value = '';
+                    document.getElementById('card-serial').value = '';
+
+                    Swal.fire({ icon: 'success', title: 'Nạp thẻ thành công!', text: `Tài khoản của bạn được cộng +${formatMoney(value)}`, background: 'var(--bg-card)', color: '#fff', confirmButtonColor: 'var(--success)' });
+                }, 1500); // Đợi 1.5s tạo cảm giác đang xử lý thẻ thực sự
+            },
+
+            // ADMIN ĐĂNG BÁN ACC
+            uploadAccount: () => {
+                const title = document.getElementById('acc-title').value.trim();
+                const price = parseInt(document.getElementById('acc-price').value);
+                const creds = document.getElementById('acc-creds').value.trim();
+
+                if (!title || isNaN(price) || !creds) {
+                    return Toast.fire({ icon: 'error', title: 'Vui lòng điền đầy đủ thông tin!' });
+                }
+
+                const newAcc = {
+                    id: 'ACC-' + Date.now().toString(),
+                    title, price, creds, status: 'available'
+                };
+
+                if (db) db.ref('accounts/' + newAcc.id).set(newAcc);
+                else { state.accounts[newAcc.id] = newAcc; renderUI(); }
+
+                document.getElementById('acc-title').value = '';
+                document.getElementById('acc-price').value = '';
+                document.getElementById('acc-creds').value = '';
+                Toast.fire({ icon: 'success', title: 'Đã đẩy tài khoản lên Shop' });
+            },
+
+            // KHÁCH MUA ACC
+            buyAccount: (accId, price) => {
+                const acc = db ? state.accounts[accId] : Object.values(state.accounts).find(a => a.id === accId);
+                
+                if (state.balance < price) {
+                    return Swal.fire({ icon: 'error', title: 'Số dư không đủ', text: `Bạn cần thêm ${formatMoney(price - state.balance)} để mua tài khoản này. Vui lòng nạp thêm thẻ.`, background: 'var(--bg-card)', color: '#fff' });
+                }
+
+                Swal.fire({
+                    title: 'Xác nhận mua?',
+                    text: `Bạn sẽ thanh toán ${formatMoney(price)} cho tài khoản này.`,
+                    icon: 'question', showCancelButton: true,
+                    confirmButtonColor: 'var(--success)', cancelButtonColor: 'var(--danger)',
+                    confirmButtonText: 'Đồng ý Mua', background: 'var(--bg-card)', color: '#fff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        state.balance -= price;
+                        
+                        // Cập nhật trạng thái Sold
+                        if (db) db.ref('accounts/' + accId + '/status').set('sold');
+                        else { acc.status = 'sold'; renderUI(); }
+
+                        // Trả về kết quả Đăng nhập cho khách xem
+                        Swal.fire({
+                            title: '🎉 Mua thành công!',
+                            html: `
+                                <p style="margin-bottom:15px; color:var(--text-muted);">Vui lòng lưu lại thông tin tài khoản bên dưới:</p>
+                                <div style="background:var(--bg-main); padding:15px; border-radius:8px; border:1px solid var(--primary); font-size:18px; font-weight:bold; color:var(--success);">
+                                    ${acc.creds}
+                                </div>
+                            `,
+                            icon: 'success', background: 'var(--bg-card)', color: '#fff'
+                        });
+                        renderUI();
+                    }
+                });
+            }
+        };
+    })();
+
+    // Khởi chạy Ứng dụng
+    document.addEventListener("DOMContentLoaded", App.init);
+</script>
+
+</body>
+</html>
